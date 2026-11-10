@@ -1,6 +1,6 @@
 start development server (from /backend):
 
-> uv run uvicorn animal_finder.main:app --app-dir src --reload
+> uv run uvicorn animal_finder.main:app --reload
 
 start redis server (wsl2):
 
