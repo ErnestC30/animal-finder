@@ -7,9 +7,9 @@ from pydantic import SecretStr
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.google import GoogleModel
 
-from agents import model_factory
-from agents.model_factory import build_model
-from config import AgentSettings, AnthropicModelName, GeminiModelName
+from animal_finder.agents import model_factory
+from animal_finder.agents.model_factory import build_model
+from animal_finder.config import AgentSettings, AnthropicModelName, GeminiModelName
 
 API_KEY = "test-api-key"
 

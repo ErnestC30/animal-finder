@@ -1,6 +1,6 @@
 import redis
 
-from agents.feature_agent import SearchFilters
+from animal_finder.agents.feature_agent import SearchFilters
 
 
 class RedisCache:

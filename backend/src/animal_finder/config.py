@@ -5,7 +5,7 @@ from typing import Literal, get_args
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 GeminiModelName = Literal["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 AnthropicModelName = Literal["claude-opus-5-5", "claude-sonnet-5-5"]

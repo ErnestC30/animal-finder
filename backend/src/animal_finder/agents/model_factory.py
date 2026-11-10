@@ -4,7 +4,7 @@ from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.google import GoogleProvider
 
-from config import AgentSettings
+from animal_finder.config import AgentSettings
 
 
 def build_model(settings: AgentSettings) -> Model:

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
-from config import DbSettings
+from animal_finder.config import DbSettings
 
 
 async def get_db():

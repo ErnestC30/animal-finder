@@ -1,9 +1,9 @@
 from pydantic_ai import Agent
 
-from config import AgentSettings, get_chat_agent_settings
-from tools import extract_features, retrieve_relevant_animals, search_new_animal
-from agents.dependencies import ChatDeps
-from agents.model_factory import build_model
+from animal_finder.config import AgentSettings, get_chat_agent_settings
+from animal_finder.tools import extract_features, retrieve_relevant_animals, search_new_animal
+from animal_finder.agents.dependencies import ChatDeps
+from animal_finder.agents.model_factory import build_model
 
 
 def initialize_chat_agent(settings: AgentSettings | None = None):

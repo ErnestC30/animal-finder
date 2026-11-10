@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from tools import AnimalData
+from animal_finder.tools import AnimalData
 
 
 def make_animal(**overrides) -> AnimalData:

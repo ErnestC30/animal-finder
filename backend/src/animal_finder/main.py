@@ -22,12 +22,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from pgvector.sqlalchemy import Vector
 from typing import Annotated
 
-from database import sessionmanager, get_db
+from animal_finder.database import sessionmanager, get_db
 
-from agents.chat_agent import initialize_chat_agent, ChatDeps
-from agents.feature_agent import initialize_features_agent
-from embedder import get_embedder
-from models import Animal
+from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
+from animal_finder.agents.feature_agent import initialize_features_agent
+from animal_finder.embedder import get_embedder
+from animal_finder.models import Animal
 
 """
 USEFUL LINKS:
@@ -138,7 +138,7 @@ async def redis_key_retrieve(key: str):
     test to retrieve previous search filters stored in redis
     """
     import redis
-    from agents.feature_agent import SearchFilters
+    from animal_finder.agents.feature_agent import SearchFilters
 
     r = redis.Redis(host="localhost", port=6379)
     json = r.get(key)

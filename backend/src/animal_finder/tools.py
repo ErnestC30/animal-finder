@@ -4,14 +4,14 @@ from sqlalchemy import Text, select
 from pydantic import BaseModel, Field
 import uuid
 
-from agents.feature_agent import (
+from animal_finder.agents.feature_agent import (
     initialize_features_agent,
     FeaturesOutput,
     SearchFilters,
 )
-from cache import RedisCache
-from models import Animal
-from agents.dependencies import ChatDeps
+from animal_finder.cache import RedisCache
+from animal_finder.models import Animal
+from animal_finder.agents.dependencies import ChatDeps
 
 """
 might want to seperate tools into their own files

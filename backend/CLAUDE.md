@@ -12,4 +12,4 @@ FastAPI project with a generative AI chat agent that can find related animals fo
 
 ### Development & Environments
 
-- Run dev server: `uv run uvicorn src.main:app --reload`
+- Run dev server: `uv run uvicorn animal_finder.main:app --app-dir src --reload`

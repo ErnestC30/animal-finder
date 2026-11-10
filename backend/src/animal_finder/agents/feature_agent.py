@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
-from config import AgentSettings, get_feature_agent_settings
-from agents.model_factory import build_model
+from animal_finder.config import AgentSettings, get_feature_agent_settings
+from animal_finder.agents.model_factory import build_model
 
 
 class SearchFilters(BaseModel):
