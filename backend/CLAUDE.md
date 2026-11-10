@@ -8,6 +8,7 @@ FastAPI project with a generative AI chat agent that can find related animals fo
 - **Package Manager:** uv
 - **Framework:** FastAPI / Pydantic v2
 - **Database / ORM:** SQLAlchemy with PostgreSQL
+- **Testing:** Pytest
 
 ### Development & Environments
 
