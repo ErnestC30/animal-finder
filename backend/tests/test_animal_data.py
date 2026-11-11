@@ -16,6 +16,22 @@ def test_valid_fields_are_stored():
     assert animal.name == "Red Fox"
     assert animal.text == "A small omnivore."
     assert animal.distance == 0.25
+    assert animal.rerank_score is None
+    assert animal.rerank_reason is None
+
+
+def test_rerank_fields_are_stored_when_provided():
+    animal = make_animal(rerank_score=8.5, rerank_reason="Matches striped coat")
+
+    assert animal.rerank_score == 8.5
+    assert animal.rerank_reason == "Matches striped coat"
+
+
+def test_rerank_fields_are_optional():
+    animal = AnimalData(id=1, name="Red Fox", text="A small omnivore.", distance=0.25)
+
+    assert animal.rerank_score is None
+    assert animal.rerank_reason is None
 
 
 @pytest.mark.parametrize("field", ["id", "name", "text", "distance"])
@@ -38,6 +54,8 @@ def test_missing_field_is_rejected(field):
         ("name", 123),
         ("text", None),
         ("distance", "far"),
+        ("rerank_score", "high"),
+        ("rerank_reason", 123),
     ],
 )
 def test_invalid_field_type_is_rejected(field, value):
@@ -65,7 +83,24 @@ def test_repr_includes_all_fields():
     animal = make_animal(id=7, name="Lynx", text="Short text", distance=0.5)
 
     assert repr(animal) == (
-        "AnimalData(id=7, name='Lynx', text='Short text', distance=0.5)"
+        "AnimalData(id=7, name='Lynx', text='Short text', distance=0.5, "
+        "rerank_score=None, rerank_reason=None)"
+    )
+
+
+def test_repr_includes_populated_rerank_fields():
+    animal = make_animal(
+        id=7,
+        name="Lynx",
+        text="Short text",
+        distance=0.5,
+        rerank_score=9.0,
+        rerank_reason="Has tufted ears",
+    )
+
+    assert repr(animal) == (
+        "AnimalData(id=7, name='Lynx', text='Short text', distance=0.5, "
+        "rerank_score=9.0, rerank_reason='Has tufted ears')"
     )
 
 

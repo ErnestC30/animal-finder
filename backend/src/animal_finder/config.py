@@ -53,6 +53,14 @@ class FeatureAgentSettings(AgentSettings):
     model_config = SettingsConfigDict(env_prefix="FEATURE_AGENT_")
 
 
+class RerankAgentSettings(AgentSettings):
+    """Reads RERANK_AGENT_MODEL and RERANK_AGENT_API_KEY."""
+
+    model: AgentModelName = "gemini-3.1-flash-lite"
+
+    model_config = SettingsConfigDict(env_prefix="RERANK_AGENT_")
+
+
 @lru_cache
 def get_chat_agent_settings() -> ChatAgentSettings:
     return ChatAgentSettings()
@@ -61,3 +69,8 @@ def get_chat_agent_settings() -> ChatAgentSettings:
 @lru_cache
 def get_feature_agent_settings() -> FeatureAgentSettings:
     return FeatureAgentSettings()
+
+
+@lru_cache
+def get_rerank_agent_settings() -> RerankAgentSettings:
+    return RerankAgentSettings()
