@@ -3,6 +3,7 @@ import asyncio
 import os
 import uuid
 
+import logging
 import logfire
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterable
@@ -40,15 +41,19 @@ https://pydantic.dev/docs/ai/core-concepts/output/#streamed-results
 
 load_dotenv()
 
+
 logfire.configure()
 logfire.instrument_httpx()
 logfire.instrument_pydantic_ai()
+logging.basicConfig(handlers=[logfire.LogfireLoggingHandler()], level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # before application starts
-    print("performing startup process...")
+    logger.info("performing startup process...")
     sessionmanager.init()
     yield
     # after application ends
@@ -56,6 +61,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+logfire.instrument_fastapi(app)
 
 
 # not needed in main application -> used for loading data into db

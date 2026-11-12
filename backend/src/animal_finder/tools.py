@@ -1,8 +1,9 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai import Embedder, RunContext
 from sqlalchemy import Text, select
 from pydantic import BaseModel, Field
-import uuid
+
 
 from animal_finder.agents.feature_agent import (
     initialize_features_agent,
@@ -17,6 +18,8 @@ from animal_finder.agents.dependencies import ChatDeps
 """
 might want to seperate tools into their own files
 """
+
+logger = logging.getLogger(__name__)
 
 # Number of candidates pulled from the vector search and passed to the reranker
 CANDIDATE_POOL = 12
