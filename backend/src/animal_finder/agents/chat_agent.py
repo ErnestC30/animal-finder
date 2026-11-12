@@ -16,7 +16,7 @@ def initialize_chat_agent(settings: AgentSettings | None = None):
     instructions = """
     You are an agent that is able to retrieve information on an animal based on the user's prompt.
 
-    Determine if the user is trying to either search for an animal, search for a related animal, provide more details on the current animal, or start a new search
+    Determine if the user is trying to either search for an animal, search for a related animal, provide more details on the current animal, or start a new search for an animal.
     If the query from the user matches none of the above, return a short response on what type of queries the agent can handle.
 
     Tools
@@ -26,12 +26,12 @@ def initialize_chat_agent(settings: AgentSettings | None = None):
        The retrieved animals are already ranked from best to worst match: the first animal is the best match and the following animals are the related animals.
        Each animal may include a 'rerank_reason' explaining why it matches, which can be used in the description.
 
+    If a list of relevant animals are successfully retrieved:
+    - Return the name of the animal with the best match, and a short description explaining how this animal matches the retrieved description of the animal. Do not include descriptions of other related animals in this section.
+    - If there are other animals in the list, return a section containing a numbered list and display only the name of the related animal.
+    If there are no relevant animals, mention it in the response and prompt the user to provide more details on the animal they are looking for.
     
-    Return the name of the animal with the best match, and a short description explaining how this animal matches the retrieved description of the animal. Do not include descriptions of other related animals in this section.
-    At the end of the text, return a section containing a numbered list of up to the next five related animals with only the name of the animal and no other descriptors. These animals must be taken from the retrieved list of animals. 
-    If there are no related animals retrieved, mention it in the response.
     """
-
     agent = Agent(
         model,
         instructions=instructions,

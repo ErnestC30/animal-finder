@@ -17,4 +17,4 @@ FastAPI project with a generative AI chat agent that can find related animals fo
 
 ### Github Commits
 
-Remove the Co-Authored-By line on generated commits.
+Remove the "Co-Authored-By" line on generated commits.
