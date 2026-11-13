@@ -22,6 +22,15 @@ class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
 
+class AppSettings(BaseSettings):
+    """Reads COOKIE_SECURE. Set it to false for local HTTP development in browsers
+    (e.g. Safari) that reject Secure cookies on http://localhost."""
+
+    cookie_secure: bool = True
+
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+
+
 class AgentSettings(BaseSettings):
     """Model and API key for an agent. The provider is derived from the model name."""
 
@@ -59,6 +68,11 @@ class RerankAgentSettings(AgentSettings):
     model: AgentModelName = "gemini-3.1-flash-lite"
 
     model_config = SettingsConfigDict(env_prefix="RERANK_AGENT_")
+
+
+@lru_cache
+def get_app_settings() -> AppSettings:
+    return AppSettings()
 
 
 @lru_cache

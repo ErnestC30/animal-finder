@@ -14,7 +14,7 @@ from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from dataclasses import dataclass
-from fastapi import FastAPI, Depends, Cookie, status
+from fastapi import FastAPI, Depends, Cookie, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from pgvector.sqlalchemy import Vector
 from typing import Annotated
 
+from animal_finder.config import get_app_settings
 from animal_finder.database import sessionmanager, get_db
 
 from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
@@ -170,12 +171,35 @@ async def test_db(db: Annotated[AsyncSession, Depends(get_db)]):
     print(len(animals))
 
 
-@app.post("/chat/stream")
+def get_session_id(
+    response: Response,
+    session_id: Annotated[str | None, Cookie()] = None,
+) -> str:
+    """
+    Returns the caller's session id, issuing a new session_id cookie if absent.
+
+    This must be a dependency: a generator endpoint's body only runs once streaming
+    starts, after FastAPI has copied the injected response's headers, so a cookie
+    set inside the endpoint itself would be dropped.
+    """
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=True,
+            samesite="lax",
+            secure=get_app_settings().cookie_secure,
+        )
+    return session_id
+
+
+@app.post("/chat/stream", response_class=EventSourceResponse)
 async def stream_chat(
     prompt: str,
-    db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie()] = None,
-):
+    db: Annotated[AsyncSession, Depends(get_db)],
+    session_id: Annotated[str, Depends(get_session_id)],
+) -> AsyncIterable[ServerSentEvent]:
     """
     main flow:
     - user gives a description of an animal they are trying to find
@@ -187,51 +211,29 @@ async def stream_chat(
         - maybe split this up into two parts (have a tool that retrieve full text for specified animal)
     - reformat this into a message showing the top animal, matching description points, and other animals that may be related
     """
-    # need to manually set EventSourceResponse in order to attach session cookie
+    """
+    SSE protocol (each `data` field is JSON-encoded):
+    - `message` events (no `event:` line): the full reply text so far, so the client
+      replaces rather than appends
+    - `error` event: the run failed; data is a user-facing error string
+    - `done` event: the run finished successfully; a stream that closes without
+      `done` was cut short
+    """
+    deps = ChatDeps(db, get_embedder(), session_id)
+    agent = initialize_chat_agent()
 
-    if not session_id:
-        session_id = str(uuid.uuid4())
-
-    embedder = get_embedder()
-    deps = ChatDeps(db, embedder, session_id)
-
-    # agent = initialize_chat_agent()
-
-    async def event_generator():
-        agent = initialize_chat_agent()
-
+    try:
         async with agent.run_stream(prompt, deps=deps) as result:
-            async for message in result.stream_text():
-                yield message
-
-                # ServerSentEvent need to convert data to string instead of raw ServerSentEvent class
-                # yield ServerSentEvent(
-                #     data=message,
-                #     event="message",
-                # ).model_dump_json()
-        print(result.all_messages())
-
-    response = EventSourceResponse(event_generator())
-
-    if session_id:
-        response.set_cookie(
-            key="session_id",
-            value=session_id,
-            httponly=True,
-            samesite="lax",
-            secure=True,  # False for local HTTP development
+            async for text in result.stream_text():
+                yield ServerSentEvent(data=text)
+        logger.debug("chat run messages: %s", result.all_messages())
+    except Exception:
+        # headers (200) are already sent, so report the failure in-band
+        logger.exception("chat stream failed")
+        yield ServerSentEvent(
+            event="error", data="Something went wrong while generating a reply."
         )
+        return
 
-    return response
-
-    # async with agent.run_stream(prompt, deps=deps) as result:
-    #     async for message in result.stream_text():
-    #         yield ServerSentEvent(data=message, event="some event")
-
-
-# @app.post("/chat/test_stream", response_class=EventSourceResponse)
-# async def stream_chat(prompt: str) -> AsyncIterable[ServerSentEvent]:
-#     agent = initialize_chat_agent()
-#     async with agent.run_stream(prompt) as result:
-#         async for message in result.stream_text():
-#             yield ServerSentEvent(data=message, event="some event")
+    # include a data field: per the SSE spec, events without one are never dispatched
+    yield ServerSentEvent(event="done", data="")
