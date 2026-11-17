@@ -28,6 +28,7 @@ from animal_finder.database import sessionmanager, get_db
 
 from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
 from animal_finder.agents.feature_agent import initialize_features_agent
+from animal_finder.cache import RedisCache
 from animal_finder.embedder import get_embedder
 from animal_finder.models import Animal
 
@@ -192,6 +193,30 @@ def get_session_id(
             secure=get_app_settings().cookie_secure,
         )
     return session_id
+
+
+@app.post("/session/reset", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_session(
+    response: Response,
+    session_id: Annotated[str | None, Cookie()] = None,
+) -> None:
+    """
+    Ends the caller's session: drops cached search filters and deletes the cookie.
+    The next /chat/stream request is issued a fresh session_id.
+    """
+    if session_id:
+        try:
+            RedisCache().clear_session(session_id)
+        except Exception:
+            # non-fatal: the cached filters also expire via TTL
+            logger.exception("failed to clear session cache")
+    # attributes must match set_cookie for browsers to remove it
+    response.delete_cookie(
+        key="session_id",
+        httponly=True,
+        samesite="lax",
+        secure=get_app_settings().cookie_secure,
+    )
 
 
 @app.post("/chat/stream", response_class=EventSourceResponse)
