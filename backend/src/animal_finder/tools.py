@@ -168,15 +168,22 @@ async def extract_features(ctx: RunContext[ChatDeps], query: str) -> FeaturesOut
     """
 
     cache = RedisCache()
-    features = cache.retrieve_features(ctx.deps.session_id)
-
-    if features:
-        query += f"""
-            \n The previous included features are: {features}
-        """
-        print("including additional features", features)
-
     agent = initialize_features_agent()
+
+    @agent.instructions
+    def current_search_features() -> str:
+        features = cache.retrieve_features(ctx.deps.session_id)
+        if not features:
+            return "There are no previous features to extract from. Start a new feature extraction."
+
+        return (
+            "These are the current features in the current session that the user is already searching for: \n"
+            f"include: {features.include} \n"
+            f"exclude: {features.exclude} \n"
+            "Add new features from the current query to these existing features, and prioritize the current query"
+            "if new features from the current query contradict the existing features."
+        )
+
     result = await agent.run(query)
     output = result.output
 
@@ -185,7 +192,10 @@ async def extract_features(ctx: RunContext[ChatDeps], query: str) -> FeaturesOut
     return output
 
 
-async def search_new_animal(ctx: RunContext[ChatDeps]) -> None:
-    """Remove existing context to start a search for a new animal query."""
+async def search_new_animal(ctx: RunContext[ChatDeps], reasion: str) -> None:
+    """DESTRUCTIVE: permanently discards all features gathered so far in this session.
+    Remove existing context in order to start a search for a new animal.
+    `reason`: quote the user's words that signal a new search.
+    """
     cache = RedisCache()
     cache.clear_session(ctx.deps.session_id)
