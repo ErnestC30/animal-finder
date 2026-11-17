@@ -23,9 +23,10 @@ class DbSettings(BaseSettings):
 
 
 class AppSettings(BaseSettings):
-    """Reads COOKIE_SECURE. Set it to false for local HTTP development in browsers
-    (e.g. Safari) that reject Secure cookies on http://localhost."""
 
+    cookie_key: str = "session_id"
+    cookie_httponly: bool = True
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     cookie_secure: bool = True
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")

@@ -172,9 +172,13 @@ async def test_db(db: Annotated[AsyncSession, Depends(get_db)]):
     print(len(animals))
 
 
+# the cookie name is read once at import, so changing COOKIE_KEY needs a restart
+SessionCookie = Annotated[str | None, Cookie(alias=get_app_settings().cookie_key)]
+
+
 def get_session_id(
     response: Response,
-    session_id: Annotated[str | None, Cookie()] = None,
+    session_id: SessionCookie = None,
 ) -> str:
     """
     Returns the caller's session id, issuing a new session_id cookie if absent.
@@ -185,12 +189,13 @@ def get_session_id(
     """
     if not session_id:
         session_id = str(uuid.uuid4())
+        settings = get_app_settings()
         response.set_cookie(
-            key="session_id",
+            key=settings.cookie_key,
             value=session_id,
-            httponly=True,
-            samesite="lax",
-            secure=get_app_settings().cookie_secure,
+            httponly=settings.cookie_httponly,
+            samesite=settings.cookie_samesite,
+            secure=settings.cookie_secure,
         )
     return session_id
 
@@ -198,7 +203,7 @@ def get_session_id(
 @app.post("/session/reset", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_session(
     response: Response,
-    session_id: Annotated[str | None, Cookie()] = None,
+    session_id: SessionCookie = None,
 ) -> None:
     """
     Ends the caller's session: drops cached search filters and deletes the cookie.
@@ -211,11 +216,12 @@ async def reset_session(
             # non-fatal: the cached filters also expire via TTL
             logger.exception("failed to clear session cache")
     # attributes must match set_cookie for browsers to remove it
+    settings = get_app_settings()
     response.delete_cookie(
-        key="session_id",
-        httponly=True,
-        samesite="lax",
-        secure=get_app_settings().cookie_secure,
+        key=settings.cookie_key,
+        httponly=settings.cookie_httponly,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
     )
 
 
