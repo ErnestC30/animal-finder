@@ -235,8 +235,7 @@ async def stream_chat(
     - pass the embedded vector to database to retrieve top x results, should also try to retrieve the full text of best result
         - maybe split this up into two parts (have a tool that retrieve full text for specified animal)
     - reformat this into a message showing the top animal, matching description points, and other animals that may be related
-    """
-    """
+
     SSE protocol (each `data` field is JSON-encoded):
     - `message` events (no `event:` line): the full reply text so far, so the client
       replaces rather than appends
@@ -244,7 +243,7 @@ async def stream_chat(
     - `done` event: the run finished successfully; a stream that closes without
       `done` was cut short
     """
-    deps = ChatDeps(db, get_embedder(), session_id)
+    deps = ChatDeps(db=db, embedder=get_embedder(), session_id=session_id)
     agent = initialize_chat_agent()
 
     try:

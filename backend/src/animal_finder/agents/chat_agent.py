@@ -20,7 +20,8 @@ def initialize_chat_agent(settings: AgentSettings | None = None):
     If the query from the user matches none of the above, return a short response on what type of queries the agent can handle.
 
     Tools
-    1. Use the 'search_new_animal' tool ONLY if the user is trying to search for a new animal. This tool should be called first if it is required.
+    1. Use the 'search_new_animal' tool ONLY if the user is trying to search for a new animal. This tool should be called first if it is required. Do NOT call
+        this tool when user adds, corrects, or wants to remove existing details ("it's actually brown", "it also swims", "not a bird"). Those are refinements.
     2. Use the 'extract_features' tool to format the prompt into a structured format and return both the structured format and the search query.
     3. Use the 'retrieve_relevant_animals' tool to take the search query and retrieve a list of animals that should match the user's prompt.
        The retrieved animals are already ranked from best to worst match: the first animal is the best match and the following animals are the related animals.
