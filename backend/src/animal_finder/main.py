@@ -27,10 +27,8 @@ from animal_finder.config import get_app_settings
 from animal_finder.database import sessionmanager, get_db
 
 from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
-from animal_finder.agents.feature_agent import initialize_features_agent
 from animal_finder.cache import RedisCache
 from animal_finder.embedder import get_embedder
-from animal_finder.models import Animal
 
 """
 USEFUL LINKS:
@@ -130,46 +128,6 @@ async def health_check():
             "checks": {"api": "ok", "database": database},
         },
     )
-
-
-@app.get("/redis")
-async def redis_test():
-    import redis
-
-    r = redis.Redis(host="localhost", port=6379)
-    r.set("foo", "bar")
-
-
-@app.post("/redis_reserialize")
-async def redis_key_retrieve(key: str):
-    """
-    test to retrieve previous search filters stored in redis
-    """
-    import redis
-    from animal_finder.agents.feature_agent import SearchFilters
-
-    r = redis.Redis(host="localhost", port=6379)
-    json = r.get(key)
-    data = SearchFilters.model_validate_json(json)
-    print(data)
-
-
-@app.post("/test")
-async def get_features(prompt: str):
-    agent = initialize_features_agent()
-    result = await agent.run(prompt)
-    print(result.output)
-
-    return {"status": "ok"}
-
-
-@app.get("/testdb")
-async def test_db(db: Annotated[AsyncSession, Depends(get_db)]):
-    from sqlalchemy import select
-
-    result = await db.execute(select(Animal))
-    animals = result.scalars().all()
-    print(len(animals))
 
 
 # the cookie name is read once at import, so changing COOKIE_KEY needs a restart
