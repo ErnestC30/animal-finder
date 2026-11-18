@@ -192,7 +192,7 @@ async def extract_features(ctx: RunContext[ChatDeps], query: str) -> FeaturesOut
     return output
 
 
-async def search_new_animal(ctx: RunContext[ChatDeps], reasion: str) -> None:
+async def search_new_animal(ctx: RunContext[ChatDeps], reason: str) -> None:
     """DESTRUCTIVE: permanently discards all features gathered so far in this session.
     Remove existing context in order to start a search for a new animal.
     `reason`: quote the user's words that signal a new search.
