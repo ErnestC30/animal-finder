@@ -64,40 +64,6 @@ app = FastAPI(lifespan=lifespan)
 logfire.instrument_fastapi(app)
 
 
-# not needed in main application -> used for loading data into db
-def initialize_search_agent():
-    load_dotenv()
-    api_key = os.environ.get("GEMINI_API_KEY")
-    provider = GoogleProvider(api_key=api_key)
-    model = GoogleModel(
-        "gemini-3.1-flash-lite",
-        provider=provider,
-    )
-    instructions = """
-    Write 6-8 paragraphs focusing on the particular animal species while focusing on following details:
-
-    Animal: {animal_name}
-
-    Physical characteristics like size, shape, coats, limbs, tails, ears, eyes where applicable.
-    Include the taxonomy and closeness to other related species.
-    Habitat and geographic locations (continent, climate, biome)
-    Food and diet
-    How they move
-    Ecological role
-    Reproduction
-    Unique traits of animals if applicable
-
-    Return the name of the animal (in singular term) and the relevant details as plain text
-    """
-    agent = Agent(model, instructions=instructions, output_type=AnimalData)
-    return agent
-
-
-class AnimalData(BaseModel):
-    name: str
-    text: str
-
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}

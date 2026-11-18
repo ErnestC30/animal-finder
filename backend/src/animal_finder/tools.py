@@ -81,7 +81,7 @@ async def rerank_animals(
         agent = initialize_rerank_agent()
         result = await agent.run(build_rerank_prompt(query, filters, candidates))
     except Exception as e:
-        print("reranking failed, falling back to distance ordering:", e)
+        logging.info("reranking failed, falling back to distance ordering:", e)
         return fallback
 
     by_id = {animal.id: animal for animal in candidates}
@@ -100,7 +100,9 @@ async def rerank_animals(
         )
 
     if not reranked:
-        print("reranking returned no valid ids, falling back to distance ordering")
+        logging.info(
+            "reranking returned no valid ids, falling back to distance ordering"
+        )
         return fallback
 
     reranked.sort(key=lambda x: x.rerank_score, reverse=True)
