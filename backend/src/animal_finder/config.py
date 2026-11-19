@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal, get_args
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -29,7 +29,16 @@ class AppSettings(BaseSettings):
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     cookie_secure: bool = True
 
+    prompt_min_length: int = Field(default=1, ge=1)
+    prompt_max_length: int = Field(default=4000, ge=1)
+
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+
+    @model_validator(mode="after")
+    def check_prompt_length_bounds(self) -> "AppSettings":
+        if self.prompt_min_length > self.prompt_max_length:
+            raise ValueError("prompt_min_length must not exceed prompt_max_length")
+        return self
 
 
 class AgentSettings(BaseSettings):

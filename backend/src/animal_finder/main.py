@@ -8,7 +8,7 @@ import logfire
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterable
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Embedder, RunContext, ModelRetry
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
@@ -149,9 +149,16 @@ async def reset_session(
     )
 
 
+class ChatRequest(BaseModel):
+    prompt: str = Field(
+        min_length=get_app_settings().prompt_min_length,
+        max_length=get_app_settings().prompt_max_length,
+    )
+
+
 @app.post("/chat/stream", response_class=EventSourceResponse)
 async def stream_chat(
-    prompt: str,
+    body: ChatRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     session_id: Annotated[str, Depends(get_session_id)],
 ) -> AsyncIterable[ServerSentEvent]:
@@ -177,7 +184,7 @@ async def stream_chat(
     agent = initialize_chat_agent()
 
     try:
-        async with agent.run_stream(prompt, deps=deps) as result:
+        async with agent.run_stream(body.prompt, deps=deps) as result:
             async for text in result.stream_text():
                 yield ServerSentEvent(data=text)
         logger.debug("chat run messages: %s", result.all_messages())
