@@ -17,7 +17,10 @@ from animal_finder.tools import (
 pytestmark = pytest.mark.anyio
 
 QUERY = "a large striped cat"
-FILTERS = SearchFilters(include={"coat": ["striped"]}, exclude={"habitat": ["Asia"]})
+FILTERS = SearchFilters(
+    include=[{"category": "physical_characteristics", "values": ["striped"]}],
+    exclude=[{"category": "habitat", "values": ["Asia"]}],
+)
 
 
 def make_candidates(count: int = CANDIDATE_POOL) -> list[AnimalData]:

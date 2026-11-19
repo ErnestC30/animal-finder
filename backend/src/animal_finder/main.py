@@ -1,6 +1,3 @@
-import sqlite3
-import asyncio
-import os
 import uuid
 
 import logging
@@ -9,18 +6,11 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncIterable
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, Embedder, RunContext, ModelRetry
-from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.providers.google import GoogleProvider
-from pydantic_ai.exceptions import UnexpectedModelBehavior
-from dataclasses import dataclass
 from fastapi import FastAPI, Depends, Cookie, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.sse import EventSourceResponse, ServerSentEvent
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
-from sqlalchemy import Text, select, text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from pgvector.sqlalchemy import Vector
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
 from animal_finder.config import get_app_settings
@@ -189,12 +179,10 @@ async def stream_chat(
                 yield ServerSentEvent(data=text)
         logger.debug("chat run messages: %s", result.all_messages())
     except Exception:
-        # headers (200) are already sent, so report the failure in-band
         logger.exception("chat stream failed")
         yield ServerSentEvent(
             event="error", data="Something went wrong while generating a reply."
         )
         return
 
-    # include a data field: per the SSE spec, events without one are never dispatched
     yield ServerSentEvent(event="done", data="")

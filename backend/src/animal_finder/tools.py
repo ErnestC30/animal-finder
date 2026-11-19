@@ -1,8 +1,7 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic_ai import Embedder, RunContext
-from sqlalchemy import Text, select
-from pydantic import BaseModel, Field
+from pydantic_ai import RunContext
+from sqlalchemy import select
+from pydantic import BaseModel
 
 
 from animal_finder.agents.feature_agent import (
@@ -80,8 +79,8 @@ async def rerank_animals(
     try:
         agent = initialize_rerank_agent()
         result = await agent.run(build_rerank_prompt(query, filters, candidates))
-    except Exception as e:
-        logging.info("reranking failed, falling back to distance ordering:", e)
+    except Exception:
+        logger.exception("reranking failed, falling back to distance ordering")
         return fallback
 
     by_id = {animal.id: animal for animal in candidates}
@@ -100,7 +99,7 @@ async def rerank_animals(
         )
 
     if not reranked:
-        logging.info(
+        logger.info(
             "reranking returned no valid ids, falling back to distance ordering"
         )
         return fallback
@@ -115,8 +114,8 @@ def load_session_filters(session_id: str | None) -> SearchFilters | None:
 
     try:
         return RedisCache().retrieve_features(session_id)
-    except Exception as e:
-        print("unable to load search filters for reranking:", e)
+    except Exception:
+        logger.exception("unable to load search filters for reranking")
         return None
 
 
