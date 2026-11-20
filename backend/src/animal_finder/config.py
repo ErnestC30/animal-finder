@@ -32,6 +32,14 @@ class AppSettings(BaseSettings):
     prompt_min_length: int = Field(default=1, ge=1)
     prompt_max_length: int = Field(default=4000, ge=1)
 
+    rate_limit_capacity: int = Field(default=10, ge=1)
+    rate_limit_refill_rate: float = Field(
+        default=0.1, gt=0
+    )  # tokens per second (0.2/s = 12 per minute)
+
+    # proxy IPs allowed to set the client IP via X-Forwarded-For; empty = never trust it
+    trusted_proxies: list[str] = []
+
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
     @model_validator(mode="after")

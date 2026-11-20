@@ -1,6 +1,3 @@
-import sqlite3
-import asyncio
-import os
 import uuid
 
 import logging
@@ -9,19 +6,13 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncIterable
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, Embedder, RunContext, ModelRetry
-from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.providers.google import GoogleProvider
-from pydantic_ai.exceptions import UnexpectedModelBehavior
-from dataclasses import dataclass
 from fastapi import FastAPI, Depends, Cookie, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.sse import EventSourceResponse, ServerSentEvent
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
-from sqlalchemy import Text, select, text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from pgvector.sqlalchemy import Vector
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from animal_finder.config import get_app_settings
 from animal_finder.database import sessionmanager, get_db
@@ -29,6 +20,7 @@ from animal_finder.database import sessionmanager, get_db
 from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
 from animal_finder.cache import RedisCache
 from animal_finder.embedder import get_embedder
+from animal_finder.rate_limit import RateLimit
 
 """
 USEFUL LINKS:
@@ -62,6 +54,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 logfire.instrument_fastapi(app)
+
+if get_app_settings().trusted_proxies:
+    # rewrites request.client from X-Forwarded-For, but only when the direct peer is a
+    # trusted proxy, so clients can't spoof their IP to dodge the rate limit
+    app.add_middleware(
+        ProxyHeadersMiddleware, trusted_hosts=get_app_settings().trusted_proxies
+    )
+
+# rejects with 429 (over the limit) or 503 (Redis down) before the stream starts
+chat_rate_limit = RateLimit(
+    "chat",
+    capacity=get_app_settings().rate_limit_capacity,
+    refill_rate=get_app_settings().rate_limit_refill_rate,
+)
 
 
 @app.get("/")
@@ -156,7 +162,11 @@ class ChatRequest(BaseModel):
     )
 
 
-@app.post("/chat/stream", response_class=EventSourceResponse)
+@app.post(
+    "/chat/stream",
+    response_class=EventSourceResponse,
+    dependencies=[Depends(chat_rate_limit)],
+)
 async def stream_chat(
     body: ChatRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -189,12 +199,10 @@ async def stream_chat(
                 yield ServerSentEvent(data=text)
         logger.debug("chat run messages: %s", result.all_messages())
     except Exception:
-        # headers (200) are already sent, so report the failure in-band
         logger.exception("chat stream failed")
         yield ServerSentEvent(
             event="error", data="Something went wrong while generating a reply."
         )
         return
 
-    # include a data field: per the SSE spec, events without one are never dispatched
     yield ServerSentEvent(event="done", data="")
