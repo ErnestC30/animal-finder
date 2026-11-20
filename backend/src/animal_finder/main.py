@@ -12,6 +12,7 @@ from fastapi.sse import EventSourceResponse, ServerSentEvent
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from animal_finder.config import get_app_settings
 from animal_finder.database import sessionmanager, get_db
@@ -19,6 +20,7 @@ from animal_finder.database import sessionmanager, get_db
 from animal_finder.agents.chat_agent import initialize_chat_agent, ChatDeps
 from animal_finder.cache import RedisCache
 from animal_finder.embedder import get_embedder
+from animal_finder.rate_limit import RateLimit
 
 """
 USEFUL LINKS:
@@ -52,6 +54,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 logfire.instrument_fastapi(app)
+
+if get_app_settings().trusted_proxies:
+    # rewrites request.client from X-Forwarded-For, but only when the direct peer is a
+    # trusted proxy, so clients can't spoof their IP to dodge the rate limit
+    app.add_middleware(
+        ProxyHeadersMiddleware, trusted_hosts=get_app_settings().trusted_proxies
+    )
+
+# rejects with 429 (over the limit) or 503 (Redis down) before the stream starts
+chat_rate_limit = RateLimit(
+    "chat",
+    capacity=get_app_settings().rate_limit_capacity,
+    refill_rate=get_app_settings().rate_limit_refill_rate,
+)
 
 
 @app.get("/")
@@ -146,7 +162,11 @@ class ChatRequest(BaseModel):
     )
 
 
-@app.post("/chat/stream", response_class=EventSourceResponse)
+@app.post(
+    "/chat/stream",
+    response_class=EventSourceResponse,
+    dependencies=[Depends(chat_rate_limit)],
+)
 async def stream_chat(
     body: ChatRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
