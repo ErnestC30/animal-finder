@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 import logging
@@ -198,6 +199,10 @@ async def stream_chat(
             async for text in result.stream_text():
                 yield ServerSentEvent(data=text)
         logger.debug("chat run messages: %s", result.all_messages())
+    except asyncio.CancelledError:
+        # the client disconnected (e.g. the user pressed Stop); let cancellation propagate
+        logger.info("chat stream cancelled by client")
+        raise
     except Exception:
         logger.exception("chat stream failed")
         yield ServerSentEvent(
