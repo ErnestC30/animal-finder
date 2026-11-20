@@ -141,7 +141,7 @@ async def reset_session(
     """
     if session_id:
         try:
-            RedisCache().clear_session(session_id)
+            RedisCache().clear_session_features(session_id)
         except Exception:
             # non-fatal: the cached filters also expire via TTL
             logger.exception("failed to clear session cache")

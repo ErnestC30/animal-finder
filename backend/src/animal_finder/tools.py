@@ -199,4 +199,4 @@ async def search_new_animal(ctx: RunContext[ChatDeps], reason: str) -> None:
     `reason`: quote the user's words that signal a new search.
     """
     cache = RedisCache()
-    cache.clear_session(ctx.deps.session_id)
+    cache.clear_session_features(ctx.deps.session_id)

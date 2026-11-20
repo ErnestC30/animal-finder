@@ -13,21 +13,28 @@ class RateLimitResult:
 
 
 class RedisCache:
+    FEATURES_PREFIX = "features:"
+
     def __init__(self, host="localhost", port=6379):
         self.client = redis.Redis(host=host, port=port)
         self._token_bucket = self.client.register_script(TOKEN_BUCKET_LUA)
 
-    def clear_session(self, session_id: str):
-        self.client.delete(session_id)
+    def _features_key(self, session_id: str) -> str:
+        return f"{self.FEATURES_PREFIX}{session_id}"
+
+    def clear_session_features(self, session_id: str):
+        self.client.delete(self._features_key(session_id))
 
     def retrieve_features(self, session_id: str) -> SearchFilters | None:
-        features = self.client.get(session_id)
+        features = self.client.get(self._features_key(session_id))
 
         if features:
             return SearchFilters.model_validate_json(features)
 
     def store_features(self, session_id: str, serialized_features: str):
-        self.client.set(session_id, serialized_features, ex=60 * 60)  # 60 min ttl
+        self.client.set(
+            self._features_key(session_id), serialized_features, ex=60 * 60
+        )  # 60 min ttl
 
     def consume_token(
         self, key: str, capacity: int, refill_rate: float, cost: int = 1
